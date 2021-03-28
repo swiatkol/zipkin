@@ -40,8 +40,10 @@ class SpanExtensionsTest {
         Arguments.of("get /books", "GET"),
         Arguments.of("GET /books", "GET"),
         Arguments.of("post /books", "POST"),
+        Arguments.of("get\t/books", "GET"),
+        Arguments.of("get", "GET"),
         Arguments.of("get ", "GET"),
-        Arguments.of("get", "GET")
+        Arguments.of("get b k", "GET")
       );
     }
 
@@ -83,6 +85,67 @@ class SpanExtensionsTest {
     }
   }
 
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class ExtractingPath {
+
+    @ParameterizedTest(name = "[{index}] when span name is \"{0}\"")
+    @MethodSource
+    void shouldExtractPathFromSpanName(String spanName, String expectedPath) {
+      // given
+      Span span = SPAN.toBuilder().name(spanName).build();
+
+      // when
+      Optional<String> path = SpanExtensions.extractPath(span);
+
+      // then
+      assertThat(path).hasValue(expectedPath);
+    }
+
+    private Stream<Arguments> shouldExtractPathFromSpanName() {
+      return Stream.of(
+        Arguments.of("get /books", "/books"),
+        Arguments.of("get /books sth", "/books"),
+        Arguments.of("get\t/books sth", "/books"),
+        Arguments.of("get /", "/"),
+        Arguments.of(" /books", "/books")
+      );
+    }
+
+    @ParameterizedTest(name = "[{index}] when span name is \"{0}\"")
+    @NullAndEmptySource
+    @ValueSource(strings = {" ", "\t", "\n", "get", "get "})
+    void shouldReturnEmptyOptional(String spanName) {
+      // given
+      Span span = SPAN.toBuilder().name(spanName).build();
+
+      // when
+      Optional<String> path = SpanExtensions.extractPath(span);
+
+      // then
+      assertThat(path).isEmpty();
+    }
+
+    @ParameterizedTest(name = "[{index}] of type \"{0}\" when span is \"{1}\"")
+    @MethodSource
+    void shouldThrowException(Class<Throwable> throwableClass, Span span) {
+      // when
+      Throwable throwable = catchThrowable(() -> SpanExtensions.extractPath(span));
+
+      // then
+      assertThat(throwable).isExactlyInstanceOf(throwableClass);
+    }
+
+    private Stream<Arguments> shouldThrowException() {
+      return Stream.of(
+        Arguments.of(IllegalArgumentException.class, SPAN.toBuilder().name("get books").build()),
+        Arguments.of(IllegalArgumentException.class, SPAN.toBuilder().name(" books").build()),
+        Arguments.of(NullPointerException.class, null)
+      );
+    }
+  }
+
+  // TODO extract path from http.path tag
 
   private static final Span SPAN = Span.newBuilder()
     .traceId("26f3f26152e42cd2")
