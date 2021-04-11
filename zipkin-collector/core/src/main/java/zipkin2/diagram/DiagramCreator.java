@@ -20,6 +20,12 @@ class DiagramCreator {
     return new Request(methodName, path, params, body);
   }
 
+  Response createResponse(Span span) {
+    String status = span.tags().get("response.status");
+      String body = span.tags().get("response.body");
+    return new Response(status, body);
+  }
+
   public Optional<String> buildDiagram(List<Span> spans, Span rootSpan) {
     return Optional.empty();
   }
@@ -30,5 +36,11 @@ class Request {
   private String method;
   private String path;
   private String params;
+  private String body;
+}
+
+@Value
+class Response {
+  private String status;
   private String body;
 }

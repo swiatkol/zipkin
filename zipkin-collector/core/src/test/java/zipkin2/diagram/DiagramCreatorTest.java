@@ -69,4 +69,46 @@ class DiagramCreatorTest {
       assertThat(request).isEqualTo(expectedRequest);
     }
   }
+
+  @Nested
+  class CreateResponse {
+
+    @Test
+    void shouldCreateResponseFromSpan() {
+      // given
+      String body = "{\"id\":\"string\"}";
+      String status = "200";
+      Response expectedResponse = new Response(status, body);
+      Span span = Span.newBuilder()
+        .traceId("26f3f26152e42cd2")
+        .id("077bd4280ffca791")
+        .kind(Span.Kind.SERVER)
+        .putTag("response.status", "200")
+        .putTag("response.body", body)
+        .build();
+
+      // when
+      Response request = diagramCreator.createResponse(span);
+
+      // then
+      assertThat(request).isEqualTo(expectedResponse);
+    }
+
+    @Test
+    void shouldCreateResponseFromSpanWithoutStatusAndBody() {
+      // given
+      Response expectedResponse = new Response(null, null);
+      Span span = Span.newBuilder()
+        .traceId("26f3f26152e42cd2")
+        .id("077bd4280ffca791")
+        .kind(Span.Kind.SERVER)
+        .build();
+
+      // when
+      Response request = diagramCreator.createResponse(span);
+
+      // then
+      assertThat(request).isEqualTo(expectedResponse);
+    }
+  }
 }
